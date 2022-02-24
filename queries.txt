@@ -1,0 +1,74 @@
+/* Question 1: What are the top 5 genres that sold tracks in USA? */
+SELECT
+  g.Name genre_name,
+  COUNT(il.TrackId) track_count
+FROM Genre g
+JOIN Track t
+  ON t.GenreId = g.GenreId
+JOIN InvoiceLine il
+  ON il.TrackId = t.TrackId
+JOIN Invoice i
+  ON il.InvoiceId = i.InvoiceId
+JOIN Customer c
+  ON i.CustomerID = c.CustomerID
+GROUP BY g.Name
+HAVING c.Country = "USA"
+ORDER BY track_count DESC
+LIMIT 5;
+
+/******************************************************************************/
+
+/* Question 2: How many tracks sold each month during year 2013? */
+SELECT
+  STRFTIME('%m-2013', i.InvoiceDate) month,
+  SUM(il.Quantity) number_of_tracks
+FROM Invoice i
+JOIN InvoiceLine il
+  ON i.InvoiceId = il.InvoiceId
+WHERE i.InvoiceDate BETWEEN '2013-01-01' AND '2014-01-01'
+GROUP BY month
+ORDER BY month;
+
+/******************************************************************************/
+
+/* Question 3: What were the top ten albums during year 2012? */
+SELECT
+  a.Title,
+  SUM(il.UnitPrice * il.Quantity) sales
+FROM InvoiceLine il
+JOIN Track t
+  ON t.TrackId = il.TrackId
+JOIN Album a
+  ON a.AlbumId = t.AlbumId
+JOIN Invoice i
+  ON il.InvoiceId = i.InvoiceId
+WHERE InvoiceDate BETWEEN '2012-01-01' AND '2013-01-01'
+GROUP BY a.Title
+ORDER BY sales DESC
+LIMIT 10;
+
+/******************************************************************************/
+
+/* Question 4:Who are the customers that spent the most on music in each country? */
+WITH t1 AS
+  (SELECT c.CustomerId,
+          c.FirstName,
+          c.LastName,
+          c.Country,
+          SUM(i.Total) total_spent
+   FROM invoice i
+   JOIN Customer c ON c.CustomerId = i.CustomerId
+   GROUP BY c.CustomerId)
+SELECT CustomerId,
+       (t1.FirstName || ' ' ||t1.LastName|| ' - ' ||t1.Country) AS customer_name,
+       t1.total_spent
+FROM t1
+JOIN
+  (SELECT t1.Country,
+          MAX(t1.total_spent) max_invoice
+   FROM t1
+   GROUP BY Country) t2 ON t1.Country = t2.Country
+AND t1.total_spent = t2.max_invoice
+LIMIT 5;
+
+/******************************************************************************/
